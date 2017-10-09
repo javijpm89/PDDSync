@@ -1,59 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from ConfigParser import SafeConfigParser
+import configurator
 import os
 import hashlib
 from termcolor import colored
 
 # GETTING CONFIG ###
 
-configfile = 'config.ini'
-config = SafeConfigParser()
-config.read(configfile)
-
-## Paths
-path_axon_home = config.get('path', 'axon_home')
-path_services = path_axon_home + config.get('path', 'axon_relative_services')
-path_javauser = path_axon_home + config.get('path', 'axon_relative_javauser') + 'javauser.jar'
-path_libs = path_axon_home + config.get('path', 'axon_relative_libs')
-path_classes = path_axon_home + config.get('path', 'axon_relative_classes')
-commander = path_axon_home + 'engine/' + config.get('files', 'axon_commander')
-sync_home = config.get('path', 'synchronizer_home')
-
-## Adresses and ports
-# Primary node
-ax_primary_node = config.get('primary_node','address')
-ax_primary_port = config.get('primary_node', 'port')
-
-# Secondary node
-ax_primary_node = config.get('secondary_node','address')
-ax_secondary_port = config.get('secondary_node', 'port')
-
-## Files
-# Services files
-services_md5_file = config.get('files', 'serviceschecksumfile')
-services_to_reload = config.get('files', 'servicestoreload')
-
-# Classes files
-classes_md5_file = config.get('files', 'classeschecksumfile')
-classes_to_reload_file = config.get('files', 'classestoreload')
-classes_temp_file = config.get('files', 'temp_file')
-
-# Javauser files
-javauser_md5_file = config.get('files', 'javauser_checksum_file')
-
-## Reloaders
-# Javauser
-ju_reloader = sync_home + config.get('scripts','javauser_reloader')
+config = configurator.Configurator()
 
 # END GETTING CONFIG #
 
 # Functions
-
-
-def reloadjavauser(port, jaxon):
-    os.system(sync_home + ju_reloader + ' ' + port + ' ' + jaxon)
-
 
 print " -- PDD SYNCHRONIZER V0.1 -- "
 
@@ -61,7 +19,7 @@ print " -- PDD SYNCHRONIZER V0.1 -- "
 # Obtain Axon version from Axon_config files
 ##
 
-with open(commander, 'r') as commander_file:
+with open(config.commander, 'r') as commander_file:
     for line in commander_file.readlines:
         if 'jaxon' not in line:
             pass
@@ -76,7 +34,7 @@ with open(commander, 'r') as commander_file:
 
 print "Analyzing Axón Services"
 
-dir_services = os.listdir(path_services)
+dir_services = os.listdir(config.path_services)
 dir_services.__len__()
 
 service_dictionary_hash = {}
@@ -97,7 +55,7 @@ for mydir in dir_services:
         myfile = mydir
         hasher.update(open(myfile).read())
     else:
-        myfile = os.listdir(path_services + mydir)
+        myfile = os.listdir(config.path_services + mydir)
         if myfile.__len__() > 0:
             hasher.update(open(myfile[0]).read())
         else:
@@ -106,10 +64,10 @@ for mydir in dir_services:
     service_dictionary_hash.update({myfile: digest})
 
 
-f_services = open(services_to_reload, 'w')
+f_services = open(config.services_to_reload, 'w')
 
 try:
-    with open(services_md5_file, 'r') as s_file:
+    with open(config.services_md5_file, 'r') as s_file:
         for line in s_file.readlines:
             service_file = line.split('-')[0]
             service_hash_file = line.split('-')[1]
@@ -132,24 +90,24 @@ finally:
 
 print "Analyzing Web Service Classes"
 # Using find to discover all classes recursively
-os.system('find ' + path_classes + ' -type f > ' + classes_temp_file)
+os.system('find ' + config.path_classes + ' -type f > ' + config.classes_temp_file)
 
 
 dict_classes = {}
-with open(classes_temp_file, 'r') as c_file:
+with open(config.classes_temp_file, 'r') as c_file:
 
     for line in c_file:
         if line is None:
             pass
         else:
             hasher.update('')
-            hasher.update(open(path_classes + line).read())
+            hasher.update(open(config.path_classes + line).read())
             digest = hasher.hexdigest()
-            dict_classes.update({path_classes + line: digest})
+            dict_classes.update({config.path_classes + line: digest})
 
-f_classes = open(classes_to_reload_file, 'rw')
+f_classes = open(config.classes_to_reload_file, 'rw')
 
-with open(classes_md5_file, 'r') as c_md5_file:
+with open(config.classes_md5_file, 'r') as c_md5_file:
     for line in c_md5_file:
         class_file = line.split('-')[0]
         class_hash_from_file = line.split('-')[1]
@@ -165,10 +123,10 @@ with open(classes_md5_file, 'r') as c_md5_file:
 
 print "Analyzing Javauser"
 
-with open(javauser_md5_file,'r') as j_md5_file:
+with open(config.javauser_md5_file, 'r') as j_md5_file:
     line = j_md5_file.read()
     j_md5_from_file = line.split('-')[1]
-    hasher.update(open(path_javauser).read())
+    hasher.update(open(config.path_javauser).read())
     javauser_hash = hasher.hexdigest()
 
 
